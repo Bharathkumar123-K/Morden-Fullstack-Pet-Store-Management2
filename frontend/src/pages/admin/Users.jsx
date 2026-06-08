@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../../utils/api'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import { LoadingPage, Badge, Modal, Pagination, EmptyState } from '../../components/ui'
-import { FiSearch, FiEdit, FiTrash2 } from 'react-icons/fi'
+import { FiSearch, FiEdit, FiTrash2, FiShield, FiAlertTriangle } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 
 export default function AdminUsers() {
@@ -14,6 +14,9 @@ export default function AdminUsers() {
   const [role, setRole] = useState('')
   const [editUser, setEditUser] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [adminPromptUser, setAdminPromptUser] = useState(null)
+  const [showAdminPrompt, setShowAdminPrompt] = useState(false)
+  const [adminConfirmEmail, setAdminConfirmEmail] = useState('')
 
   const fetchUsers = async () => {
     setLoading(true)
@@ -45,6 +48,37 @@ export default function AdminUsers() {
       toast.success('User deactivated')
       fetchUsers()
     } catch { toast.error('Failed') }
+  }
+
+  const handleMakeAdmin = (user) => {
+    setAdminPromptUser(user)
+    setAdminConfirmEmail('')
+    setShowAdminPrompt(true)
+  }
+
+  const handleConfirmAdmin = async () => {
+    if (!adminPromptUser) return
+    if (adminConfirmEmail !== adminPromptUser.email) {
+      toast.error('Email confirmation does not match')
+      return
+    }
+    try {
+      await api.put(`/users/${adminPromptUser._id}`, { role: 'admin', isActive: true })
+      toast.success(`${adminPromptUser.name} is now an Admin`)
+      setShowAdminPrompt(false)
+      setAdminPromptUser(null)
+      setAdminConfirmEmail('')
+      fetchUsers()
+    } catch { toast.error('Failed to assign admin role') }
+  }
+
+  const handleRemoveAdmin = async (user) => {
+    if (!window.confirm(`Remove admin privileges from ${user.name}? They will become a customer.`)) return
+    try {
+      await api.put(`/users/${user._id}`, { role: 'customer', isActive: true })
+      toast.success('Admin privileges removed')
+      fetchUsers()
+    } catch { toast.error('Failed to remove admin role') }
   }
 
   return (
@@ -99,6 +133,16 @@ export default function AdminUsers() {
                         <td className="px-4 py-3 text-gray-400 text-xs">{new Date(user.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
+                            {user.role !== 'admin' && (
+                              <button onClick={() => handleMakeAdmin(user)} title="Make Admin" className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-lg">
+                                <FiShield />
+                              </button>
+                            )}
+                            {user.role === 'admin' && (
+                              <button onClick={() => handleRemoveAdmin(user)} title="Remove Admin" className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg">
+                                <FiShield />
+                              </button>
+                            )}
                             <button onClick={() => { setEditUser({ ...user }); setShowModal(true) }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><FiEdit /></button>
                             <button onClick={() => handleDeactivate(user._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><FiTrash2 /></button>
                           </div>
@@ -148,6 +192,49 @@ export default function AdminUsers() {
           </form>
         )}
       </Modal>
+
+      <Modal isOpen={showAdminPrompt} onClose={() => { setShowAdminPrompt(false); setAdminConfirmEmail('') }} title="⚠️ Assign Admin Role">
+        {adminPromptUser && (
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
+              <FiAlertTriangle className="text-amber-600 text-xl shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800">
+                <p className="font-semibold mb-1">⚠️ Admin Permissions</p>
+                <p>Admins can create, edit, and delete all resources, manage users, and control the entire website. Use with caution.</p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Assigning admin to:</strong><br/>
+                {adminPromptUser.name} ({adminPromptUser.email})
+              </p>
+            </div>
+
+            <div>
+              <label className="label">Confirm by typing their email</label>
+              <input 
+                type="email" 
+                className="input" 
+                placeholder={adminPromptUser.email}
+                value={adminConfirmEmail} 
+                onChange={e => setAdminConfirmEmail(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Type the user's email address to confirm</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setShowAdminPrompt(false); setAdminConfirmEmail('') }} className="btn-outline flex-1">Cancel</button>
+              <button type="button" onClick={handleConfirmAdmin} disabled={adminConfirmEmail !== adminPromptUser.email} className="btn-primary flex-1 disabled:opacity-50">
+                Confirm Admin Role
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </DashboardLayout>
+  )
+}
     </DashboardLayout>
   )
 }
