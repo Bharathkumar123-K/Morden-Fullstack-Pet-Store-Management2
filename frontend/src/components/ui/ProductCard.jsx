@@ -18,39 +18,81 @@ export default function ProductCard({ product }) {
   const price = product.salePrice || product.price
 
   return (
-    <div className="card group hover:shadow-md transition-all duration-300">
-      <div className="relative overflow-hidden">
-        <img src={product.images?.[0] || 'https://via.placeholder.com/300x200'} alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
-        {product.salePrice && (
-          <span className="absolute top-3 left-3 badge bg-red-100 text-red-700">Sale</span>
-        )}
-        {product.stock === 0 && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-white font-semibold">Out of Stock</span>
+    <div className="card group hover:shadow-xl hover:-translate-y-1 hover:border-slate-200/80 transition-all duration-500 relative bg-white flex flex-col justify-between">
+      <div>
+        <div className="relative overflow-hidden aspect-[4/3] bg-slate-100">
+          <img
+            src={product.images?.[0] || 'https://picsum.photos/seed/petstore-prod/600/400'}
+            alt={product.name}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://picsum.photos/seed/petstore-prod-fallback/600/400';
+            }}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+          />
+          {/* Sale Badge */}
+          {product.salePrice && (
+            <span className="absolute top-3 left-3 z-10 px-3 py-1 text-[10px] font-bold tracking-wider uppercase bg-rose-500 text-white rounded-lg shadow-md">
+              Sale
+            </span>
+          )}
+          {/* Out of Stock Overlay */}
+          {product.stock === 0 && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+              <span className="text-white bg-slate-950/80 px-4 py-2 rounded-xl text-xs font-bold tracking-wider uppercase border border-white/10 shadow-lg">
+                Out of Stock
+              </span>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-5">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{product.brand}</p>
+          <h3 className="font-display font-bold text-slate-800 mb-1 group-hover:text-primary-600 transition-colors line-clamp-2 leading-snug">{product.name}</h3>
+          
+          <div className="flex items-center gap-1.5 mb-3">
+            <StarRating rating={product.rating} />
+            <span className="text-xs text-slate-400 font-semibold">({product.numReviews})</span>
           </div>
-        )}
+
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-primary-600 font-extrabold text-xl font-display">{formatPrice(price)}</span>
+              {product.salePrice && (
+                <span className="text-slate-400 line-through text-xs font-medium">{formatPrice(product.price)}</span>
+              )}
+            </div>
+            {product.stock > 0 && (
+              <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                product.stock < 10 
+                  ? 'bg-amber-50 text-amber-700 border border-amber-100/50' 
+                  : 'bg-green-50 text-green-700 border border-green-100/50'
+              }`}>
+                {product.stock < 10 ? `Only ${product.stock} left` : 'In stock'}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="p-4">
-        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{product.brand}</p>
-        <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
-        <div className="flex items-center gap-1 mb-2">
-          <StarRating rating={product.rating} />
-          <span className="text-xs text-gray-400">({product.numReviews})</span>
-        </div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-primary-600 font-bold text-lg">{formatPrice(price)}</span>
-            {product.salePrice && <span className="text-gray-400 line-through text-sm">{formatPrice(product.price)}</span>}
-          </div>
-          <span className={`text-xs ${product.stock < 10 ? 'text-orange-600' : 'text-gray-400'}`}>
-            {product.stock < 10 ? `Only ${product.stock} left` : 'In stock'}
-          </span>
-        </div>
-        <button onClick={handleAddToCart} disabled={product.stock === 0}
-          className="w-full btn-primary text-sm py-2 flex items-center justify-center gap-2">
-          <FiShoppingCart /> Add to Cart
-        </button>
+      
+      <div className="px-5 pb-5 pt-0">
+        {product.stock > 0 ? (
+          <button 
+            onClick={handleAddToCart} 
+            className="w-full btn-primary text-sm py-2.5 flex items-center justify-center gap-2 rounded-xl shadow-md shadow-primary-500/10 hover:shadow-lg hover:shadow-primary-500/20 active:scale-95 transition-all"
+          >
+            <FiShoppingCart /> Add to Cart
+          </button>
+        ) : (
+          <button 
+            disabled 
+            className="w-full bg-slate-100 text-slate-400 text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+          >
+            Out of Stock
+          </button>
+        )}
       </div>
     </div>
   )

@@ -4,16 +4,42 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+const generateToken = (id) => {
+  if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not configured');
+  if (!process.env.JWT_EXPIRE) throw new Error('JWT_EXPIRE is not configured');
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+};
 
 // @POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, phone } = req.body;
-  if (await User.findOne({ email })) {
-    res.status(400); throw new Error('Email already registered');
+
+  if (!name || !email || !password) {
+    res.status(400);
+    throw new Error('Name, email, and password are required');
   }
-  const user = await User.create({ name, email, password, phone });
-  res.status(201).json({ success: true, token: generateToken(user._id), user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
+
+  if (await User.findOne({ email })) {
+    res.status(400);
+    throw new Error('Email already registered');
+  }
+
+  try {
+    const user = await User.create({ name, email, password, phone });
+    res.status(201).json({
+      success: true,
+      token: generateToken(user._id),
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role, avatar: user.avatar },
+    });
+  } catch (err) {
+    // Provide clearer errors for common prod issues (e.g., schema validation, duplicate key)
+    if (err && err.code === 11000) {
+      res.status(400);
+      throw new Error('Email already registered');
+    }
+    res.status(400);
+    throw new Error(err.message || 'Registration failed');
+  }
 });
 
 // @POST /api/auth/login

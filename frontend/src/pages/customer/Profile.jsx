@@ -60,7 +60,7 @@ export default function Profile() {
             </div>
             <div>
               <label className="label">Email</label>
-              <input className="input" value={user?.email} disabled className="input bg-gray-50 text-gray-400 cursor-not-allowed" />
+              <input value={user?.email} disabled className="input bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200" />
             </div>
             <div>
               <label className="label">Phone</label>
