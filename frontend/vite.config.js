@@ -8,5 +8,21 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:5000', changeOrigin: true }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts') || id.includes('d3')) {
+              return 'vendor-recharts';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })
+
